@@ -1,0 +1,2 @@
+merge conflict was fixed by committing changes and then merging
+about.html contact.html customers.html all recieved this at the top near the third line <!-- Write your comments here -->
