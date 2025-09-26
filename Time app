@@ -1,0 +1,716 @@
+if (time24) {
+updateTime(day, type, time24);
+} else {
+// Reset to previous value if invalid
+const savedTimes = JSON.parse(localStorage.getItem(‘timeTracker’)) || {};
+const dayData = savedTimes[day];
+if (dayData) {
+document.getElementById(`input-${day}-${type}`).value = formatTimeDisplay(dayData[type]);
+}
+}
+}
+
+```
+    function setQuickTime(day, type, time24) {
+        if (time24) {
+            updateTime(day, type, time24);
+            // Update the time input display immediately
+            document.getElementById(`input-${day}-${type}`).value = time24;
+            // Reset the dropdown
+            event.target.value = '';
+        }
+    }
+
+    function updateTime(day, type, value) {
+        let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+        if (!savedTimes[day]) savedTimes[day] = { 
+            clockIn: '', 
+            clockOut: '',
+            break1Start: '',
+            break1End: '',
+            lunchStart: '',
+            lunchEnd: '',
+            break2Start: '',
+            break2End: '',
+            additionalShifts: []
+        };
+        
+        savedTimes[day][type] = value;
+        localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
+        
+        updateDayTotal(day);
+    }
+
+    function updateDayTotal(day) {
+        const savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+        const dayData = savedTimes[day];
+        if (!dayData) return;
+        
+        const dayTotal = calculateDayTotal(dayData);
+        document.getElementById(`total-${day}`).textContent = total;
+        updateWeekTotal();
+    }
+
+    function calculateShiftTotal(shift) {
+        if (!shift.inTime || !shift.outTime) return '0 hours';
+        
+        const inTime = new Date(`2000-01-01T${shift.inTime}`);
+        const outTime = new Date(`2000-01-01T${shift.outTime}`);
+        
+        if (outTime <= inTime) return '0 hours';
+        
+        let totalMinutes = (outTime - inTime) / (1000 * 60);
+        
+        // Subtract breaks if enabled and have times
+        if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
+            const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
+            const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
+            totalMinutes -= (breakEnd - breakStart) / (1000 * 60);
+        }
+        
+        if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
+            const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
+            const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
+            totalMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
+        }
+        
+        if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
+            const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
+            const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
+            totalMinutes -= (breakEnd - breakStart) / (1000 * 60);
+        }
+        
+        totalMinutes = Math.max(0, totalMinutes);
+        
+        // Format as "X hours & Y minutes"
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        if (hours === 0 && minutes === 0) {
+            return '0 hours';
+        } else if (hours === 0) {
+            return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else if (minutes === 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+            return `${hours} hour${hours !== 1 ? 's' : ''} & ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        }
+    }
+
+    function calculateDayTotal(dayData) {
+        let totalMinutes = 0;
+        
+        if (dayData.shifts) {
+            dayData.shifts.forEach(shift => {
+                if (shift.inTime && shift.outTime) {
+                    const inTime = new Date(`2000-01-01T${shift.inTime}`);
+                    const outTime = new Date(`2000-01-01T${shift.outTime}`);
+                    
+                    if (outTime > inTime) {
+                        let shiftMinutes = (outTime - inTime) / (1000 * 60);
+                        
+                        // Subtract breaks if enabled
+                        if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
+                            const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
+                            const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
+                            shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
+                        }
+                        
+                        if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
+                            const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
+                            const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
+                            shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
+                        }
+                        
+                        if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
+                            const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
+                            const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
+                            shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
+                        }
+                        
+                        totalMinutes += Math.max(0, shiftMinutes);
+                    }
+                }
+            });
+        }
+        
+        // Format as "X hours & Y minutes"
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        if (hours === 0 && minutes === 0) {
+            return '0 hours';
+        } else if (hours === 0) {
+            return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else if (minutes === 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+            return `${hours} hour${hours !== 1 ? 's' : ''} & ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        }
+    }
+
+    function formatTimeDisplay(time24) {
+        if (!time24) return '';
+        
+        const [hours, minutes] = time24.split(':');
+        const hour24 = parseInt(hours);
+        const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        
+        return `${hour12}:${minutes} ${ampm}`;
+    }
+
+    function updateWeekTotal() {
+        const savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        
+        let totalMinutes = 0;
+        days.forEach(day => {
+            const dayData = savedTimes[day] || { shifts: [] };
+            
+            if (dayData.shifts) {
+                dayData.shifts.forEach(shift => {
+                    if (shift.inTime && shift.outTime) {
+                        const inTime = new Date(`2000-01-01T${shift.inTime}`);
+                        const outTime = new Date(`2000-01-01T${shift.outTime}`);
+                        
+                        if (outTime > inTime) {
+                            let shiftMinutes = (outTime - inTime) / (1000 * 60);
+                            
+                            // Subtract breaks
+                            if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
+                                const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
+                                const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
+                                shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
+                            }
+                            
+                            if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
+                                const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
+                                const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
+                                shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
+                            }
+                            
+                            if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
+                                const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
+                                const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
+                                shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
+                            }
+                            
+                            totalMinutes += Math.max(0, shiftMinutes);
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Format as "X hours & Y minutes" 
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        let weekTotalText;
+        if (hours === 0 && minutes === 0) {
+            weekTotalText = 'Weekly Total: 0 hours';
+        } else if (hours === 0) {
+            weekTotalText = `Weekly Total: ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else if (minutes === 0) {
+            weekTotalText = `Weekly Total: ${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+            weekTotalText = `Weekly Total: ${hours} hour${hours !== 1 ? 's' : ''} & ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        }
+        
+        document.getElementById('weekTotal').textContent = weekTotalText;
+    }
+
+    function clearTimeTracker() {
+        if (confirm('Are you sure you want to clear all time entries?')) {
+            localStorage.removeItem('timeTracker');
+            initializeTimeTracker();
+            updateWeekTotal();
+        }
+    }
+
+    // Tab Functions
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Checklist Functions
+    function addChecklistItem(type) {
+        const input = document.getElementById(`new${type.charAt(0).toUpperCase() + type.slice(1)}Item`);
+        const text = input.value.trim();
+        
+        if (text === '') return;
+
+        const checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist.push({
+            text: text,
+            completed: false,
+            id: Date.now()
+        });
+
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        input.value = '';
+        loadChecklist(type);
+    }
+
+    function loadChecklist(type) {
+        const checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        const container = document.getElementById(`${type}Checklist`);
+        
+        if (checklist.length === 0) {
+            container.innerHTML = '<p>No items yet. Add one above!</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        checklist.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `checklist-item ${item.completed ? 'completed' : ''}`;
+            itemDiv.innerHTML = `
+                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem('${type}', ${index})">
+                <span>${item.text}</span>
+                <button class="delete-btn" onclick="deleteItem('${type}', ${index})">Delete</button>
+            `;
+            container.appendChild(itemDiv);
+        });
+    }
+
+    function toggleItem(type, index) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist[index].completed = !checklist[index].completed;
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function deleteItem(type, index) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist.splice(index, 1);
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function clearChecklist(type) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist = checklist.filter(item => !item.completed);
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function clearAllChecklist(type) {
+        if (confirm(`Are you sure you want to clear all ${type} checklist items?`)) {
+            localStorage.removeItem(`${type}Checklist`);
+            loadChecklist(type);
+        }
+    }
+
+    // Reminders Functions
+    document.getElementById('reminderForm').onsubmit = function(e) {
+        e.preventDefault();
+        saveReminder();
+    };
+
+    function saveReminder() {
+        const reminderData = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            priority: document.getElementById('priority').value,
+            dueDate: document.getElementById('dueDate').value,
+            timestamp: new Date().toLocaleString(),
+            id: Date.now()
+        };
+
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.push(reminderData);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+
+        clearReminderForm();
+        loadReminders();
+    }
+
+    function clearReminderForm() {
+        document.getElementById('reminderForm').reset();
+    }
+
+    function loadReminders() {
+        const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        const container = document.getElementById('reminders');
+        
+        if (reminders.length === 0) {
+            container.innerHTML = '<p>No reminders yet.</p>';
+            return;
+        }
+
+        // Sort by priority (high, medium, low) and due date
+        reminders.sort((a, b) => {
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                return priorityOrder[b.priority] - priorityOrder[a.priority];
+            }
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        });
+
+        container.innerHTML = '';
+        reminders.forEach((reminder, index) => {
+            const reminderDiv = document.createElement('div');
+            reminderDiv.className = `reminder-item ${reminder.priority}`;
+            reminderDiv.innerHTML = `
+                <h4>${reminder.title} <span class="priority-badge ${reminder.priority}">${reminder.priority.toUpperCase()}</span></h4>
+                <p><strong>Description:</strong> ${reminder.description || 'No description'}</p>
+                <p><strong>Due Date:</strong> ${reminder.dueDate || 'No due date'}</p>
+                <p><strong>Added:</strong> ${reminder.timestamp}</p>
+                <button class="delete-btn" onclick="deleteReminder(${reminder.id})">Delete</button>
+            `;
+            container.appendChild(reminderDiv);
+        });
+    }
+
+    function deleteReminder(id) {
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders = reminders.filter(reminder => reminder.id !== id);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+        loadReminders();
+    }
+
+    function clearAllReminders() {
+        if (confirm('Are you sure you want to delete all reminders?')) {
+            localStorage.removeItem('reminders');
+            loadReminders();
+        }
+    }
+</script>
+```
+
+</body>
+</html> dayTotal;
+            updateWeekTotal();
+        }
+
+```
+    function calculateDayTotal(dayData) {
+        let totalMinutes = 0;
+        
+        // Calculate main shift
+        if (dayData.clockIn && dayData.clockOut) {
+            const inTime = new Date(`2000-01-01T${dayData.clockIn}`);
+            const outTime = new Date(`2000-01-01T${dayData.clockOut}`);
+            
+            if (outTime > inTime) {
+                let shiftMinutes = (outTime - inTime) / (1000 * 60);
+                
+                // Subtract breaks
+                if (dayData.break1Start && dayData.break1End) {
+                    const break1Start = new Date(`2000-01-01T${dayData.break1Start}`);
+                    const break1End = new Date(`2000-01-01T${dayData.break1End}`);
+                    shiftMinutes -= (break1End - break1Start) / (1000 * 60);
+                }
+                
+                if (dayData.lunchStart && dayData.lunchEnd) {
+                    const lunchStart = new Date(`2000-01-01T${dayData.lunchStart}`);
+                    const lunchEnd = new Date(`2000-01-01T${dayData.lunchEnd}`);
+                    shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
+                }
+                
+                if (dayData.break2Start && dayData.break2End) {
+                    const break2Start = new Date(`2000-01-01T${dayData.break2Start}`);
+                    const break2End = new Date(`2000-01-01T${dayData.break2End}`);
+                    shiftMinutes -= (break2End - break2Start) / (1000 * 60);
+                }
+                
+                totalMinutes += Math.max(0, shiftMinutes);
+            }
+        }
+        
+        // Add additional shifts
+        if (dayData.additionalShifts && dayData.additionalShifts.length > 0) {
+            dayData.additionalShifts.forEach(shift => {
+                const shiftMinutes = calculateShiftTotalMinutes(shift);
+                totalMinutes += shiftMinutes;
+            });
+        }
+        
+        // Format as "X hours & Y minutes"
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        if (hours === 0 && minutes === 0) {
+            return '0 hours';
+        } else if (hours === 0) {
+            return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else if (minutes === 0) {
+            return `${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+            return `${hours} hour${hours !== 1 ? 's' : ''} & ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        }
+    }
+
+    function formatTimeDisplay(time24) {
+        if (!time24) return '';
+        
+        const [hours, minutes] = time24.split(':');
+        const hour24 = parseInt(hours);
+        const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        
+        return `${hour12}:${minutes} ${ampm}`;
+    }
+
+    function updateWeekTotal() {
+        const savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        
+        let totalMinutes = 0;
+        days.forEach(day => {
+            const dayData = savedTimes[day] || { 
+                clockIn: '', 
+                clockOut: '',
+                break1Start: '',
+                break1End: '',
+                lunchStart: '',
+                lunchEnd: '',
+                break2Start: '',
+                break2End: '',
+                additionalShifts: []
+            };
+            
+            // Calculate main shift minutes
+            if (dayData.clockIn && dayData.clockOut) {
+                const inTime = new Date(`2000-01-01T${dayData.clockIn}`);
+                const outTime = new Date(`2000-01-01T${dayData.clockOut}`);
+                
+                if (outTime > inTime) {
+                    let shiftMinutes = (outTime - inTime) / (1000 * 60);
+                    
+                    // Subtract breaks
+                    if (dayData.break1Start && dayData.break1End) {
+                        const break1Start = new Date(`2000-01-01T${dayData.break1Start}`);
+                        const break1End = new Date(`2000-01-01T${dayData.break1End}`);
+                        shiftMinutes -= (break1End - break1Start) / (1000 * 60);
+                    }
+                    
+                    if (dayData.lunchStart && dayData.lunchEnd) {
+                        const lunchStart = new Date(`2000-01-01T${dayData.lunchStart}`);
+                        const lunchEnd = new Date(`2000-01-01T${dayData.lunchEnd}`);
+                        shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
+                    }
+                    
+                    if (dayData.break2Start && dayData.break2End) {
+                        const break2Start = new Date(`2000-01-01T${dayData.break2Start}`);
+                        const break2End = new Date(`2000-01-01T${dayData.break2End}`);
+                        shiftMinutes -= (break2End - break2Start) / (1000 * 60);
+                    }
+                    
+                    totalMinutes += Math.max(0, shiftMinutes);
+                }
+            }
+            
+            // Add additional shifts
+            if (dayData.additionalShifts && dayData.additionalShifts.length > 0) {
+                dayData.additionalShifts.forEach(shift => {
+                    totalMinutes += calculateShiftTotalMinutes(shift);
+                });
+            }
+        });
+        
+        // Format as "X hours & Y minutes" 
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = Math.round(totalMinutes % 60);
+        
+        let weekTotalText;
+        if (hours === 0 && minutes === 0) {
+            weekTotalText = 'Weekly Total: 0 hours';
+        } else if (hours === 0) {
+            weekTotalText = `Weekly Total: ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        } else if (minutes === 0) {
+            weekTotalText = `Weekly Total: ${hours} hour${hours !== 1 ? 's' : ''}`;
+        } else {
+            weekTotalText = `Weekly Total: ${hours} hour${hours !== 1 ? 's' : ''} & ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+        }
+        
+        document.getElementById('weekTotal').textContent = weekTotalText;
+    }
+
+    function clearTimeTracker() {
+        if (confirm('Are you sure you want to clear all time entries?')) {
+            localStorage.removeItem('timeTracker');
+            initializeTimeTracker();
+            updateWeekTotal();
+        }
+    }
+
+    // Tab Functions
+    function switchTab(tabName) {
+        // Hide all tab contents
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Remove active class from all tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        // Show selected tab content
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // Checklist Functions
+    function addChecklistItem(type) {
+        const input = document.getElementById(`new${type.charAt(0).toUpperCase() + type.slice(1)}Item`);
+        const text = input.value.trim();
+        
+        if (text === '') return;
+
+        const checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist.push({
+            text: text,
+            completed: false,
+            id: Date.now()
+        });
+
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        input.value = '';
+        loadChecklist(type);
+    }
+
+    function loadChecklist(type) {
+        const checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        const container = document.getElementById(`${type}Checklist`);
+        
+        if (checklist.length === 0) {
+            container.innerHTML = '<p>No items yet. Add one above!</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        checklist.forEach((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `checklist-item ${item.completed ? 'completed' : ''}`;
+            itemDiv.innerHTML = `
+                <input type="checkbox" ${item.completed ? 'checked' : ''} onchange="toggleItem('${type}', ${index})">
+                <span>${item.text}</span>
+                <button class="delete-btn" onclick="deleteItem('${type}', ${index})">Delete</button>
+            `;
+            container.appendChild(itemDiv);
+        });
+    }
+
+    function toggleItem(type, index) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist[index].completed = !checklist[index].completed;
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function deleteItem(type, index) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist.splice(index, 1);
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function clearChecklist(type) {
+        let checklist = JSON.parse(localStorage.getItem(`${type}Checklist`)) || [];
+        checklist = checklist.filter(item => !item.completed);
+        localStorage.setItem(`${type}Checklist`, JSON.stringify(checklist));
+        loadChecklist(type);
+    }
+
+    function clearAllChecklist(type) {
+        if (confirm(`Are you sure you want to clear all ${type} checklist items?`)) {
+            localStorage.removeItem(`${type}Checklist`);
+            loadChecklist(type);
+        }
+    }
+
+    // Reminders Functions
+    document.getElementById('reminderForm').onsubmit = function(e) {
+        e.preventDefault();
+        saveReminder();
+    };
+
+    function saveReminder() {
+        const reminderData = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            priority: document.getElementById('priority').value,
+            dueDate: document.getElementById('dueDate').value,
+            timestamp: new Date().toLocaleString(),
+            id: Date.now()
+        };
+
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders.push(reminderData);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+
+        clearReminderForm();
+        loadReminders();
+    }
+
+    function clearReminderForm() {
+        document.getElementById('reminderForm').reset();
+    }
+
+    function loadReminders() {
+        const reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        const container = document.getElementById('reminders');
+        
+        if (reminders.length === 0) {
+            container.innerHTML = '<p>No reminders yet.</p>';
+            return;
+        }
+
+        // Sort by priority (high, medium, low) and due date
+        reminders.sort((a, b) => {
+            const priorityOrder = { high: 3, medium: 2, low: 1 };
+            if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+                return priorityOrder[b.priority] - priorityOrder[a.priority];
+            }
+            return new Date(a.dueDate) - new Date(b.dueDate);
+        });
+
+        container.innerHTML = '';
+        reminders.forEach((reminder, index) => {
+            const reminderDiv = document.createElement('div');
+            reminderDiv.className = `reminder-item ${reminder.priority}`;
+            reminderDiv.innerHTML = `
+                <h4>${reminder.title} <span class="priority-badge ${reminder.priority}">${reminder.priority.toUpperCase()}</span></h4>
+                <p><strong>Description:</strong> ${reminder.description || 'No description'}</p>
+                <p><strong>Due Date:</strong> ${reminder.dueDate || 'No due date'}</p>
+                <p><strong>Added:</strong> ${reminder.timestamp}</p>
+                <button class="delete-btn" onclick="deleteReminder(${reminder.id})">Delete</button>
+            `;
+            container.appendChild(reminderDiv);
+        });
+    }
+
+    function deleteReminder(id) {
+        let reminders = JSON.parse(localStorage.getItem('reminders')) || [];
+        reminders = reminders.filter(reminder => reminder.id !== id);
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+        loadReminders();
+    }
+
+    function clearAllReminders() {
+        if (confirm('Are you sure you want to delete all reminders?')) {
+            localStorage.removeItem('reminders');
+            loadReminders();
+        }
+    }
+</script>
+```
+
+</body>
+</html>
