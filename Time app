@@ -599,7 +599,14 @@
             // If opening for the first time and no shifts, add one
             if (content.classList.contains('show')) {
                 let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
-                if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
+                
+                // Ensure day object exists with shifts array
+                if (!savedTimes[day]) {
+                    savedTimes[day] = { shifts: [] };
+                }
+                if (!savedTimes[day].shifts) {
+                    savedTimes[day].shifts = [];
+                }
                 
                 if (savedTimes[day].shifts.length === 0) {
                     // Create and save the first shift
