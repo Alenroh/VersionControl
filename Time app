@@ -516,7 +516,7 @@
         };
 
         // Time Tracker Functions
-        function generateQuickTimes(type) {
+        function generateQuickDayTimes(type) {
             let options = '<option value="">Quick Times</option>';
             
             if (type === 'in') {
@@ -538,17 +538,22 @@
                     const display = formatTimeDisplay(time);
                     options += `<option value="${time}">${display}</option>`;
                 });
-            } else if (type === 'break') {
-                const times = [
-                    '09:00', '09:15', '09:30', '10:00', '10:15', '10:30',
-                    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-                    '14:00', '14:15', '14:30', '15:00', '15:15', '15:30'
-                ];
-                times.forEach(time => {
-                    const display = formatTimeDisplay(time);
-                    options += `<option value="${time}">${display}</option>`;
-                });
             }
+            
+            return options;
+        }
+
+        function generateQuickBreakTimes() {
+            let options = '<option value="">Quick Times</option>';
+            const times = [
+                '09:00', '09:15', '09:30', '10:00', '10:15', '10:30',
+                '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+                '14:00', '14:15', '14:30', '15:00', '15:15', '15:30'
+            ];
+            times.forEach(time => {
+                const display = formatTimeDisplay(time);
+                options += `<option value="${time}">${display}</option>`;
+            });
             
             return options;
         }
@@ -631,7 +636,14 @@
 
         function addShift(day) {
             let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
-            if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
+            
+            // Ensure day object exists with shifts array
+            if (!savedTimes[day]) {
+                savedTimes[day] = { shifts: [] };
+            }
+            if (!savedTimes[day].shifts) {
+                savedTimes[day].shifts = [];
+            }
             
             const newShift = {
                 id: Date.now(),
@@ -670,7 +682,7 @@
                             <label>In Time</label>
                             <input type="time" class="time-input" value="${shift.inTime}" 
                                    onchange="updateShiftTime('${day}', ${shift.id}, 'inTime', this.value)">
-                            <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'inTime', this.value)">
+                            <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'inTime', this.value, this)">
                                 ${generateQuickTimes('in')}
                             </select>
                         </div>
@@ -678,7 +690,7 @@
                             <label>Out Time</label>
                             <input type="time" class="time-input" value="${shift.outTime}" 
                                    onchange="updateShiftTime('${day}', ${shift.id}, 'outTime', this.value)">
-                            <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'outTime', this.value)">
+                            <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'outTime', this.value, this)">
                                 ${generateQuickTimes('out')}
                             </select>
                         </div>
@@ -699,7 +711,7 @@
                                     <label>Start</label>
                                     <input type="time" class="time-input" value="${shift.breaks.break1.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break1', 'start', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'start', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'start', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -707,7 +719,7 @@
                                     <label>End</label>
                                     <input type="time" class="time-input" value="${shift.breaks.break1.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break1', 'end', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'end', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'end', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -723,7 +735,7 @@
                                     <label>Start</label>
                                     <input type="time" class="time-input" value="${shift.breaks.lunch.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'lunch', 'start', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'start', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'start', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -731,7 +743,7 @@
                                     <label>End</label>
                                     <input type="time" class="time-input" value="${shift.breaks.lunch.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'lunch', 'end', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'end', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'end', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -747,7 +759,7 @@
                                     <label>Start</label>
                                     <input type="time" class="time-input" value="${shift.breaks.break2.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break2', 'start', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'start', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'start', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -755,7 +767,7 @@
                                     <label>End</label>
                                     <input type="time" class="time-input" value="${shift.breaks.break2.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break2', 'end', this.value)">
-                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'end', this.value)">
+                                    <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'end', this.value, this)">
                                         ${generateQuickTimes('break')}
                                     </select>
                                 </div>
@@ -804,10 +816,16 @@
             }
         }
 
-        function setQuickShiftTime(day, shiftId, field, value) {
+        function setQuickShiftTime(day, shiftId, field, value, selectElement) {
             if (value) {
                 updateShiftTime(day, shiftId, field, value);
-                event.target.value = '';
+                selectElement.value = '';
+                // Update the corresponding time input field
+                const container = selectElement.closest('.time-input-group');
+                const timeInput = container.querySelector('.time-input');
+                if (timeInput) {
+                    timeInput.value = value;
+                }
             }
         }
 
@@ -821,10 +839,16 @@
             }
         }
 
-        function setQuickBreakTime(day, shiftId, breakType, field, value) {
+        function setQuickBreakTime(day, shiftId, breakType, field, value, selectElement) {
             if (value) {
                 updateBreakTime(day, shiftId, breakType, field, value);
-                event.target.value = '';
+                selectElement.value = '';
+                // Update the corresponding time input field
+                const container = selectElement.closest('.time-input-group');
+                const timeInput = container.querySelector('.time-input');
+                if (timeInput) {
+                    timeInput.value = value;
+                }
             }
         }
 
@@ -866,23 +890,11 @@
             
             let totalMinutes = (outTime - inTime) / (1000 * 60);
             
-            // Subtract breaks if enabled and have times
-            if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
-                const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
-                const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
-                totalMinutes -= (breakEnd - breakStart) / (1000 * 60);
-            }
-            
+            // Only subtract lunch if enabled and has times
             if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
                 const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
                 const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
                 totalMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
-            }
-            
-            if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
-                const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
-                const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
-                totalMinutes -= (breakEnd - breakStart) / (1000 * 60);
             }
             
             totalMinutes = Math.max(0, totalMinutes);
@@ -914,23 +926,11 @@
                         if (outTime > inTime) {
                             let shiftMinutes = (outTime - inTime) / (1000 * 60);
                             
-                            // Subtract breaks if enabled
-                            if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
-                                const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
-                                const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
-                                shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
-                            }
-                            
+                            // Only subtract lunch if enabled
                             if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
                                 const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
                                 const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
                                 shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
-                            }
-                            
-                            if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
-                                const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
-                                const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
-                                shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
                             }
                             
                             totalMinutes += Math.max(0, shiftMinutes);
@@ -982,23 +982,11 @@
                             if (outTime > inTime) {
                                 let shiftMinutes = (outTime - inTime) / (1000 * 60);
                                 
-                                // Subtract breaks
-                                if (shift.breaks.break1.enabled && shift.breaks.break1.start && shift.breaks.break1.end) {
-                                    const breakStart = new Date(`2000-01-01T${shift.breaks.break1.start}`);
-                                    const breakEnd = new Date(`2000-01-01T${shift.breaks.break1.end}`);
-                                    shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
-                                }
-                                
+                                // Only subtract lunch
                                 if (shift.breaks.lunch.enabled && shift.breaks.lunch.start && shift.breaks.lunch.end) {
                                     const lunchStart = new Date(`2000-01-01T${shift.breaks.lunch.start}`);
                                     const lunchEnd = new Date(`2000-01-01T${shift.breaks.lunch.end}`);
                                     shiftMinutes -= (lunchEnd - lunchStart) / (1000 * 60);
-                                }
-                                
-                                if (shift.breaks.break2.enabled && shift.breaks.break2.start && shift.breaks.break2.end) {
-                                    const breakStart = new Date(`2000-01-01T${shift.breaks.break2.start}`);
-                                    const breakEnd = new Date(`2000-01-01T${shift.breaks.break2.end}`);
-                                    shiftMinutes -= (breakEnd - breakStart) / (1000 * 60);
                                 }
                                 
                                 totalMinutes += Math.max(0, shiftMinutes);
