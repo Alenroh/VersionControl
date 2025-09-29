@@ -543,12 +543,38 @@
             return options;
         }
 
-        function generateQuickBreakTimes() {
+        function generateQuickBreak1Times() {
             let options = '<option value="">Quick Times</option>';
             const times = [
-                '09:00', '09:15', '09:30', '10:00', '10:15', '10:30',
-                '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-                '14:00', '14:15', '14:30', '15:00', '15:15', '15:30'
+                '09:00', '09:15', '09:30', '09:45', '10:00', '10:15', '10:30', '10:45', '11:00'
+            ];
+            times.forEach(time => {
+                const display = formatTimeDisplay(time);
+                options += `<option value="${time}">${display}</option>`;
+            });
+            
+            return options;
+        }
+
+        function generateQuickLunchTimes() {
+            let options = '<option value="">Quick Times</option>';
+            const times = [
+                '11:00', '11:15', '11:30', '11:45', '12:00', '12:15', '12:30', 
+                '12:45', '13:00', '13:15', '13:30', '13:45', '14:00'
+            ];
+            times.forEach(time => {
+                const display = formatTimeDisplay(time);
+                options += `<option value="${time}">${display}</option>`;
+            });
+            
+            return options;
+        }
+
+        function generateQuickBreak2Times() {
+            let options = '<option value="">Quick Times</option>';
+            const times = [
+                '13:00', '13:15', '13:30', '13:45', '14:00', '14:15', '14:30', 
+                '14:45', '15:00', '15:15', '15:30', '15:45', '16:00'
             ];
             times.forEach(time => {
                 const display = formatTimeDisplay(time);
@@ -683,7 +709,7 @@
                             <input type="time" class="time-input" value="${shift.inTime}" 
                                    onchange="updateShiftTime('${day}', ${shift.id}, 'inTime', this.value)">
                             <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'inTime', this.value, this)">
-                                ${generateQuickTimes('in')}
+                                ${generateQuickDayTimes('in')}
                             </select>
                         </div>
                         <div class="time-input-group">
@@ -691,7 +717,7 @@
                             <input type="time" class="time-input" value="${shift.outTime}" 
                                    onchange="updateShiftTime('${day}', ${shift.id}, 'outTime', this.value)">
                             <select class="time-select" onchange="setQuickShiftTime('${day}', ${shift.id}, 'outTime', this.value, this)">
-                                ${generateQuickTimes('out')}
+                                ${generateQuickDayTimes('out')}
                             </select>
                         </div>
                         <button class="break-toggle-btn" onclick="toggleBreaks('${day}', ${shift.id})">+ Breaks</button>
@@ -712,7 +738,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.break1.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break1', 'start', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'start', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickBreak1Times()}
                                     </select>
                                 </div>
                                 <div class="time-input-group">
@@ -720,7 +746,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.break1.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break1', 'end', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break1', 'end', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickBreak1Times()}
                                     </select>
                                 </div>
                             </div>
@@ -736,7 +762,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.lunch.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'lunch', 'start', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'start', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickLunchTimes()}
                                     </select>
                                 </div>
                                 <div class="time-input-group">
@@ -744,7 +770,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.lunch.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'lunch', 'end', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'lunch', 'end', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickLunchTimes()}
                                     </select>
                                 </div>
                             </div>
@@ -760,7 +786,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.break2.start}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break2', 'start', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'start', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickBreak2Times()}
                                     </select>
                                 </div>
                                 <div class="time-input-group">
@@ -768,7 +794,7 @@
                                     <input type="time" class="time-input" value="${shift.breaks.break2.end}"
                                            onchange="updateBreakTime('${day}', ${shift.id}, 'break2', 'end', this.value)">
                                     <select class="time-select" onchange="setQuickBreakTime('${day}', ${shift.id}, 'break2', 'end', this.value, this)">
-                                        ${generateQuickTimes('break')}
+                                        ${generateQuickBreak2Times()}
                                     </select>
                                 </div>
                             </div>
