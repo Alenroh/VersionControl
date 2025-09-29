@@ -596,10 +596,25 @@
             
             // If opening for the first time and no shifts, add one
             if (content.classList.contains('show')) {
-                const savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+                let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
                 const dayData = savedTimes[day] || { shifts: [] };
                 if (dayData.shifts.length === 0) {
-                    addShift(day);
+                    // Create and save the first shift
+                    if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
+                    const newShift = {
+                        id: Date.now(),
+                        inTime: '',
+                        outTime: '',
+                        breaks: {
+                            break1: { enabled: false, start: '', end: '' },
+                            lunch: { enabled: false, start: '', end: '' },
+                            break2: { enabled: false, start: '', end: '' }
+                        }
+                    };
+                    savedTimes[day].shifts.push(newShift);
+                    localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
+                    // Load the shifts immediately
+                    loadShifts(day, savedTimes[day].shifts);
                 }
             }
         }
