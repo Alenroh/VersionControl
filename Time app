@@ -587,7 +587,8 @@
             updateWeekTotal();
         }
 
-        function toggleDay(day) {
+            
+         function toggleDay(day) {
             const content = document.getElementById(`content-${day}`);
             const expandBtn = document.getElementById(`expand-${day}`);
             
@@ -618,7 +619,6 @@
                 }
             }
         }
-
         function addShift(day) {
             let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
             if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
