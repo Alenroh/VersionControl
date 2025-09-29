@@ -581,14 +581,15 @@
                 container.appendChild(daySection);
                 
                 // Load existing shifts
-                loadShifts(day, dayData.shifts);
+                if (dayData.shifts && dayData.shifts.length > 0) {
+                    loadShifts(day, dayData.shifts);
+                }
             });
             
             updateWeekTotal();
         }
 
-            
-         function toggleDay(day) {
+        function toggleDay(day) {
             const content = document.getElementById(`content-${day}`);
             const expandBtn = document.getElementById(`expand-${day}`);
             
@@ -598,10 +599,10 @@
             // If opening for the first time and no shifts, add one
             if (content.classList.contains('show')) {
                 let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
-                const dayData = savedTimes[day] || { shifts: [] };
-                if (dayData.shifts.length === 0) {
+                if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
+                
+                if (savedTimes[day].shifts.length === 0) {
                     // Create and save the first shift
-                    if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
                     const newShift = {
                         id: Date.now(),
                         inTime: '',
@@ -614,11 +615,13 @@
                     };
                     savedTimes[day].shifts.push(newShift);
                     localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
-                    // Load the shifts immediately
-                    loadShifts(day, savedTimes[day].shifts);
                 }
+                
+                // Always load shifts when expanding
+                loadShifts(day, savedTimes[day].shifts);
             }
         }
+
         function addShift(day) {
             let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
             if (!savedTimes[day]) savedTimes[day] = { shifts: [] };
@@ -641,7 +644,14 @@
 
         function loadShifts(day, shifts) {
             const container = document.getElementById(`shifts-${day}`);
+            if (!container) return;
+            
             container.innerHTML = '';
+            
+            // Handle undefined or empty shifts array
+            if (!shifts || !Array.isArray(shifts) || shifts.length === 0) {
+                return;
+            }
             
             shifts.forEach((shift, index) => {
                 const shiftDiv = document.createElement('div');
