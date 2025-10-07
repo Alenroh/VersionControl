@@ -74,14 +74,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: transform 0.3s;
         }
 
         .expand-btn:hover {
             background-color: #45a049;
         }
 
-        .expand-btn.expanded {
+        .expand-btn span {
+            display: inline-block;
+            transition: transform 0.3s;
+        }
+
+        .expand-btn.expanded span {
             transform: rotate(45deg);
         }
 
@@ -213,6 +217,47 @@
 
         .break-times.show {
             display: grid;
+        }
+
+        .notes-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .notes-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .notes-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .notes-label {
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .notes-textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: Arial, sans-serif;
+            box-sizing: border-box;
+            display: none;
+        }
+
+        .notes-textarea.show {
+            display: block;
         }
 
         .add-shift-btn {
@@ -600,7 +645,7 @@
                 daySection.className = `day-section ${isToday ? 'today' : ''}`;
                 daySection.innerHTML = `
                     <div class="day-header" onclick="toggleDay('${day}')">
-                        <button class="expand-btn" id="expand-${day}" onclick="event.stopPropagation()">+</button>
+                        <button class="expand-btn" id="expand-${day}" onclick="event.stopPropagation()"><span>+</span></button>
                         <span class="day-name">${day}</span>
                         <span class="day-total" id="total-${day}">${calculateDayTotal(dayData)}</span>
                     </div>
@@ -649,7 +694,9 @@
                             break1: { enabled: false, start: '', end: '' },
                             lunch: { enabled: false, start: '', end: '' },
                             break2: { enabled: false, start: '', end: '' }
-                        }
+                        },
+                        notes: '',
+                        notesEnabled: false
                     };
                     savedTimes[day].shifts.push(newShift);
                     localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
@@ -679,7 +726,9 @@
                     break1: { enabled: false, start: '', end: '' },
                     lunch: { enabled: false, start: '', end: '' },
                     break2: { enabled: false, start: '', end: '' }
-                }
+                },
+                notes: '',
+                notesEnabled: false
             };
             
             savedTimes[day].shifts.push(newShift);
@@ -799,10 +848,49 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="notes-section">
+                            <div class="notes-header">
+                                <input type="checkbox" class="notes-checkbox" 
+                                       ${shift.notesEnabled ? 'checked' : ''}
+                                       onchange="toggleNotes('${day}', ${shift.id}, this.checked)">
+                                <span class="notes-label">Notes</span>
+                            </div>
+                            <textarea class="notes-textarea ${shift.notesEnabled ? 'show' : ''}" 
+                                      id="notes-${day}-${shift.id}"
+                                      rows="3" 
+                                      placeholder="Add any notes about this shift..."
+                                      onchange="updateShiftNotes('${day}', ${shift.id}, this.value)"
+                                      oninput="updateShiftNotes('${day}', ${shift.id}, this.value)">${shift.notes || ''}</textarea>
+                        </div>
                     </div>
                 `;
                 container.appendChild(shiftDiv);
             });
+        }
+
+        function toggleNotes(day, shiftId, enabled) {
+            let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+            const shift = savedTimes[day].shifts.find(s => s.id === shiftId);
+            if (shift) {
+                shift.notesEnabled = enabled;
+                localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
+                
+                const notesTextarea = document.getElementById(`notes-${day}-${shiftId}`);
+                if (enabled) {
+                    notesTextarea.classList.add('show');
+                } else {
+                    notesTextarea.classList.remove('show');
+                }
+            }
+        }
+
+        function updateShiftNotes(day, shiftId, notes) {
+            let savedTimes = JSON.parse(localStorage.getItem('timeTracker')) || {};
+            const shift = savedTimes[day].shifts.find(s => s.id === shiftId);
+            if (shift) {
+                shift.notes = notes;
+                localStorage.setItem('timeTracker', JSON.stringify(savedTimes));
+            }
         }
 
         function toggleBreaks(day, shiftId) {
